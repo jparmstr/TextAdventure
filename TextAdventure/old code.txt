@@ -1,0 +1,213 @@
+﻿        '(should these happen before or after the regular actions? should there be an option on triggers?)
+        '(I'm having an issue with the .setTriggerNotCompleted where both actions happen on the same input,
+        ' - the flashlight turns on then off instantly)
+
+		        'to do:
+        '- handle error cases:
+        '   - list is empty
+        '   - list has only one item (special case for syntax)
+        '   - thing you are trying to take isn't where you are
+        '   - thing you are trying to take belongs to a person who isn't where you are
+        '   - thing you are trying to leave or give doesn't belong to you
+        '   - a blank description
+        '   - a blank dialogue
+        '   - a blank action
+
+
+            'If (objectUniqueName.ToLower = targetObject.ToLower AndAlso commandType = targetCommand) Or dontEnforceFirstTargetMatch Then
+            '    result = True
+
+            '    If Not comparisonProperty = comparisonPropertyType.none AndAlso Not logicalOperation = logicalOperationType.none Then
+            '        Dim to1 = getObject_byName(targetObject)
+            '        Dim to2 = getObject_byName(secondTargetObject)
+
+            '        Select Case comparisonProperty
+            '            Case comparisonPropertyType.location
+            '                Select Case logicalOperation
+            '                    Case logicalOperationType.equals
+            '                        'location of targetObject and secondTargetObject are equal
+            '                        If to1.location Is to2.location Then
+            '                            result = True
+            '                        Else
+            '                            result = False
+            '                        End If
+            '                    Case logicalOperationType.doesNotEqual
+            '                        'location of targetObject and secondTargetObject are not equal
+            '                        If Not to1.location Is to2.location Then
+            '                            result = True
+            '                        Else
+            '                            result = False
+            '                        End If
+            '                End Select
+            '        End Select
+            '    End If
+            'End If
+
+        'triggers
+        'a trigger that can unlock the hallway
+        Dim keyTrigger As New trigger
+        With keyTrigger
+            .condition.createActionOnObject(commandType.useThing, "key")
+            .condition.comparisonProperty = comparisonPropertyType.location
+            .condition.logicalOperation = logicalOperationType.equals
+            .condition.secondTargetObject = "hallway"
+
+            .triggerName = "use key in hallway trigger"
+            'lock or unlock the gate in the hallway
+            Dim keyTA1 As New triggerAction(triggerActionType.lockOrUnlock, "key")
+            keyTA1.lockUnlock_firstPlaceName = "hallway"
+            keyTA1.lockUnlock_secondPlaceName = "kitchen"
+            'keyTA1.lockUnlock_doorType = "gate"
+            .triggerActions.Add(keyTA1)
+            'set self not completed so that this action can be performed again and again
+            Dim keyTA2 As New triggerAction(triggerActionType.setTriggerNotCompleted, "use key in hallway trigger")
+            keyTA2.happensAfterTurn = True
+            .triggerActions.Add(keyTA2)
+        End With
+
+        '(create two triggers that turn the flashlight on/off and also set each other as not completed)
+        Dim firstTrigger As New trigger
+        With firstTrigger
+            .condition.createActionOnObject(commandType.useThing, "flashlight")
+            .triggerName = "turn on flashlight"
+            '.exposition = "You turned on the flashlight."
+            '.preemptsCommand = True
+            'change the text on the flashlight item
+            Dim first_1 As New triggerAction(triggerActionType.description, "flashlight")
+            first_1.description = "This is Pete's cool Fenix flashlight. It is turned on."
+            .triggerActions.Add(first_1)
+            'change the action text on the flashlight
+            Dim first_2 As New triggerAction(triggerActionType.action, "flashlight")
+            first_2.action = "You turned on the flashlight."
+            .triggerActions.Add(first_2)
+            'set the other trigger as not completed
+            Dim first_3 As New triggerAction(triggerActionType.setTriggerNotCompleted, "turn off flashlight")
+            first_3.happensAfterTurn = True
+            .triggerActions.Add(first_3)
+        End With
+
+        Dim secondTrigger As New trigger
+        With secondTrigger
+            .condition.createActionOnObject(commandType.useThing, "flashlight")
+            .triggerName = "turn off flashlight"
+            '.exposition = "You turned off the flashlight."
+            .completed = True 'completed at first since this is the default state
+            '.preemptsCommand = True
+            'change the text on the flashlight item
+            Dim second_1 As New triggerAction(triggerActionType.description, "flashlight")
+            second_1.description = "This is Pete's cool Fenix flashlight. It is turned off."
+            .triggerActions.Add(second_1)
+            'change the action text on the flashlight
+            Dim second_2 As New triggerAction(triggerActionType.action, "flashlight")
+            second_2.action = "You turned off the flashlight."
+            .triggerActions.Add(second_2)
+            'set the other trigger as not completed
+            Dim second_3 As New triggerAction(triggerActionType.setTriggerNotCompleted, "turn on flashlight")
+            second_3.happensAfterTurn = True
+            .triggerActions.Add(second_3)
+        End With
+
+        'a set of triggers that moves Roxy back and forth every 5 turns
+        Dim automaticTrigger1 As New trigger
+        With automaticTrigger1
+            .condition.createActionOnObject(commandType.noCommand, "")
+            .condition.automaticCounter = 5
+            .triggerName = "move Roxy to bedroom"
+            .exposition = "Roxy moved to the Bedroom"
+            '.preemptsCommand = True
+            'TA move Roxy to hallway
+            Dim third_1 As New triggerAction(triggerActionType.changeLocation, "roxy")
+            third_1.locationName = "bedroom"
+            .triggerActions.Add(third_1)
+            'TA set other trigger as not completed
+            Dim third_2 As New triggerAction(triggerActionType.setTriggerNotCompleted, "move Roxy to red bedroom")
+            third_2.happensAfterTurn = True
+            .triggerActions.Add(third_2)
+        End With
+
+        Dim automaticTrigger2 As New trigger
+        With automaticTrigger2
+            .condition.createActionOnObject(commandType.noCommand, "")
+            .condition.automaticCounter = 5
+            .triggerName = "move Roxy to red bedroom"
+            .exposition = "Roxy moved to the Red Bedroom"
+            '.preemptsCommand = True
+            .completed = True 'completed since it's the default
+            'TA move roxy to red bedroom
+            Dim fourth_1 As New triggerAction(triggerActionType.changeLocation, "roxy")
+            fourth_1.locationName = "red bedroom"
+            .triggerActions.Add(fourth_1)
+            'TA set other trigger as not completed
+            Dim fourth_2 As New triggerAction(triggerActionType.setTriggerNotCompleted, "move Roxy to bedroom")
+            fourth_2.happensAfterTurn = True
+            .triggerActions.Add(fourth_2)
+        End With
+
+        'I want to create a trigger that moves Wiggily and Scuttle out of a room if Roxy moves into the same room
+        'With the current triggerCondition variable, I can make something happen when Roxy Moves but there are no additional checks
+        'I want something like if Roxy (targetObject) Moves (targetCommand) and Roxy's (targetObject) location (targetObject.location) matches my (secondTargetObject?) location (secondTargetObject.location) then activate
+        'I guess I would need to know about two different targetObjects, which of their properties to compare, and which logical operation to use. Hopefully that's not a confusing amount of Enums
+
+        'I've implemented what I described above, but I think it's still not quite adequate to accomplish my goal...
+        'If I want Wiggily and Scuttle to move to a _different_ room than Roxy, I can't explicitly say which room they're supposed to go to
+        'So this suggests deeper logic for the triggerActions. The logic on the condition is already adequate.
+
+        'I just created a custom triggerActionType called changeLocationRandom that does what I want
+        'I'll have to update it further once I've implemented the concept of connections between places
+
+        Dim chaseTrigger As New trigger
+        With chaseTrigger
+            .condition.createActionOnObject(commandType.moveToPlace, "roxy")
+            .condition.dontEnforceFirstTargetMatch = True
+            .condition.secondTargetObject = "scuttle"
+            .condition.logicalOperation = logicalOperationType.equals
+            .condition.comparisonProperty = comparisonPropertyType.location
+            .triggerName = "roxy chases scuttle trigger"
+            .exposition = "Scuttle ran away from Roxy"
+            Dim chaseTA As New triggerAction(triggerActionType.changeLocationRandom, "scuttle")
+            .triggerActions.Add(chaseTA)
+            Dim chaseSetTA As New triggerAction(triggerActionType.setTriggerNotCompleted, "roxy chases scuttle trigger")
+            chaseSetTA.happensAfterTurn = True
+            .triggerActions.Add(chaseSetTA)
+        End With
+
+                    Else
+                        Console.Write("[Warning] The condition with uniqueID " + uniqueID.ToString + " is missing either sTOcomparisonProperty or sTOlogicalOperation")
+
+
+        'Public dontEnforceFirstTargetMatch As Boolean 'use for automatic triggerActions where the targetCommand varies
+
+        Public Sub create(triggerActionType As triggerActionType, _targetName As String)
+            type = triggerActionType
+            targetName = _targetName
+        End Sub
+
+        'Public lockUnlock_doorType As String 'a description (door, gate, etc)
+
+		        'I want to create a trigger that moves Wiggily and Scuttle out of a room if Roxy moves into the same room
+        'With the current triggerCondition variable, I can make something happen when Roxy Moves but there are no additional checks
+        'I want something like if Roxy (targetObject) Moves (targetCommand) and Roxy's (targetObject) location (targetObject.location) matches my (secondTargetObject?) location (secondTargetObject.location) then activate
+        'I guess I would need to know about two different targetObjects, which of their properties to compare, and which logical operation to use. Hopefully that's not a confusing amount of Enums
+
+        'I've implemented what I described above, but I think it's still not quite adequate to accomplish my goal...
+        'If I want Wiggily and Scuttle to move to a _different_ room than Roxy, I can't explicitly say which room they're supposed to go to
+        'So this suggests deeper logic for the triggerActions. The logic on the condition is already adequate.
+
+        'I just created a custom triggerActionType called changeLocationRandom that does what I want
+        'I'll have to update it further once I've implemented the concept of connections between places
+
+		        'actually I think activate / deactivate should be a set of triggerActions
+
+        'Public Sub activate()
+        '    inUse = True
+        '    tempAction = activateMessage
+        '    update()
+        'End Sub
+
+        'Public Sub deactivate()
+        '    inUse = False
+        'End Sub
+
+                        'thisThing.getLocation.inventory.Remove(thisThing)
+                        'If Not thisThing.getOwner Is Nothing Then thisThing.getOwner.inventory.Remove(thisThing)
+
